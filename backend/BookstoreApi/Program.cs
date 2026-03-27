@@ -30,7 +30,7 @@ var dbPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "Bookstore.
 if (!File.Exists(dbPath))
 {
     // Fallback for IDE runs where the file might not have been copied yet.
-    dbPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "Bookstore.sqlite"));
+    dbPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "Bookstore.sqlite"));
 }
 
 var connectionString = $"Data Source={dbPath}";
@@ -52,7 +52,8 @@ app.MapGet("/api/books", async (
     BookstoreDbContext db,
     int pageNumber = 1,
     int pageSize = 5,
-    string sortDirection = "asc") =>
+    string sortDirection = "asc",
+    string category = "All") =>
 {
     pageNumber = pageNumber < 1 ? 1 : pageNumber;
     pageSize = pageSize < 1 ? 5 : pageSize;
@@ -61,6 +62,11 @@ app.MapGet("/api/books", async (
     var descending = string.Equals(sortDirection, "desc", StringComparison.OrdinalIgnoreCase);
 
     var baseQuery = db.Books.AsNoTracking();
+    if (!string.Equals(category, "All", StringComparison.OrdinalIgnoreCase))
+    {
+        baseQuery = baseQuery.Where(b => b.Category == category);
+    }
+
     var totalCount = await baseQuery.CountAsync();
     var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
@@ -90,11 +96,25 @@ app.MapGet("/api/books", async (
     return Results.Ok(new
     {
         items,
+        selectedCategory = category,
         totalCount,
         pageSize,
         pageNumber,
         totalPages
     });
+});
+
+app.MapGet("/api/books/categories", async (BookstoreDbContext db) =>
+{
+    var categories = await db.Books
+        .AsNoTracking()
+        .Select(b => b.Category)
+        .Distinct()
+        .OrderBy(c => c)
+        .ToListAsync();
+
+    categories.Insert(0, "All");
+    return Results.Ok(categories);
 });
 
 app.Run();

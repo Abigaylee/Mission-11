@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <!-- Ensure the pre-populated SQLite database travels with the app -->
-    <None Include="..\\Bookstore.sqlite">
+    <None Include="Bookstore.sqlite">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
