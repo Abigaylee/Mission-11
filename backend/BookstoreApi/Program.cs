@@ -117,4 +117,104 @@ app.MapGet("/api/books/categories", async (BookstoreDbContext db) =>
     return Results.Ok(categories);
 });
 
+app.MapPost("/api/books", async (BookstoreDbContext db, BookInputDto input) =>
+{
+    var validationError = ValidateBookInput(input);
+    if (validationError is not null)
+    {
+        return Results.BadRequest(new { message = validationError });
+    }
+
+    var book = new BookstoreApi.Models.Book
+    {
+        Title = input.Title.Trim(),
+        Author = input.Author.Trim(),
+        Publisher = input.Publisher.Trim(),
+        ISBN = input.ISBN.Trim(),
+        Classification = input.Classification.Trim(),
+        Category = input.Category.Trim(),
+        PageCount = input.PageCount,
+        Price = input.Price
+    };
+
+    db.Books.Add(book);
+    await db.SaveChangesAsync();
+
+    return Results.Created($"/api/books/{book.BookId}", new
+    {
+        bookId = book.BookId,
+        title = book.Title,
+        author = book.Author,
+        publisher = book.Publisher,
+        isbn = book.ISBN,
+        classification = book.Classification,
+        category = book.Category,
+        pageCount = book.PageCount,
+        price = book.Price
+    });
+});
+
+app.MapPut("/api/books/{id:int}", async (BookstoreDbContext db, int id, BookInputDto input) =>
+{
+    var validationError = ValidateBookInput(input);
+    if (validationError is not null)
+    {
+        return Results.BadRequest(new { message = validationError });
+    }
+
+    var existing = await db.Books.FindAsync(id);
+    if (existing is null)
+    {
+        return Results.NotFound();
+    }
+
+    existing.Title = input.Title.Trim();
+    existing.Author = input.Author.Trim();
+    existing.Publisher = input.Publisher.Trim();
+    existing.ISBN = input.ISBN.Trim();
+    existing.Classification = input.Classification.Trim();
+    existing.Category = input.Category.Trim();
+    existing.PageCount = input.PageCount;
+    existing.Price = input.Price;
+
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+app.MapDelete("/api/books/{id:int}", async (BookstoreDbContext db, int id) =>
+{
+    var existing = await db.Books.FindAsync(id);
+    if (existing is null)
+    {
+        return Results.NotFound();
+    }
+
+    db.Books.Remove(existing);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
 app.Run();
+
+static string? ValidateBookInput(BookInputDto input)
+{
+    if (string.IsNullOrWhiteSpace(input.Title)) return "Title is required.";
+    if (string.IsNullOrWhiteSpace(input.Author)) return "Author is required.";
+    if (string.IsNullOrWhiteSpace(input.Publisher)) return "Publisher is required.";
+    if (string.IsNullOrWhiteSpace(input.ISBN)) return "ISBN is required.";
+    if (string.IsNullOrWhiteSpace(input.Classification)) return "Classification is required.";
+    if (string.IsNullOrWhiteSpace(input.Category)) return "Category is required.";
+    if (input.PageCount <= 0) return "Page count must be greater than zero.";
+    if (input.Price < 0) return "Price must be zero or greater.";
+    return null;
+}
+
+record BookInputDto(
+    string Title,
+    string Author,
+    string Publisher,
+    string ISBN,
+    string Classification,
+    string Category,
+    int PageCount,
+    decimal Price);

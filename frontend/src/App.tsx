@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import BookList from "./components/BookList";
 import CartPage from "./components/CartPage";
+import AdminBooks from "./components/AdminBooks";
 import type { Book, CartItem } from "./types";
 import "./App.css";
 
@@ -86,6 +87,7 @@ export default function App() {
           />
         }
       />
+      <Route path="/adminbooks" element={<AdminBooks />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
